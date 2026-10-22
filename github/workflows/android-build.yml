@@ -1,0 +1,41 @@
+
+name: JARVIS Android AAB Build
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Check project files
+        run: |
+          echo "Checking repository..."
+          if [ ! -f gradlew ]; then
+            echo "Android Gradle project is missing: gradlew not found."
+            echo "This workflow cannot build an AAB until Android project files are added."
+            exit 1
+          fi
+          chmod +x gradlew
+
+      - name: Build release AAB
+        run: ./gradlew bundleRelease
+
+      - name: Upload AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: JARVIS-release-AAB
+          path: '**/build/outputs/bundle/release/*.aab'
+          if-no-files-found: error
