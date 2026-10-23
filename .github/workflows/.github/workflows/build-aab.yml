@@ -1,0 +1,51 @@
+name: Build Release AAB (JARVIS)
+
+on:
+  workflow_dispatch: # Button dabate hi build start ho jayega
+
+jobs:
+  build:
+    name: Build Android App Bundle (.aab)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Java JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+          cache: 'gradle'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Grant Execute Permission for Gradlew
+        run: chmod +x android/gradlew || chmod +x gradlew
+
+      # Automated keystore generator for testing/build
+      - name: Generate Keystore for Release
+        run: |
+          keytool -genkeypair -v -keystore release.keystore \
+            -alias jarvis-key -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass jarvispassword -keypass jarvispassword \
+            -dname "CN=Mr Tanishk, OU=JARVIS AI, O=JARVIS, L=Patna, S=Bihar, C=IN"
+
+      - name: Build Android App Bundle (.aab)
+        run: |
+          cd android 2>/dev/null || true
+          ./gradlew bundleRelease \
+            -Pandroid.injected.signing.store.file=../release.keystore \
+            -Pandroid.injected.signing.store.password=jarvispassword \
+            -Pandroid.injected.signing.key.alias=jarvis-key \
+            -Pandroid.injected.signing.key.password=jarvispassword
+
+      - name: Upload AAB Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: JARVIS-Release-AAB
+          path: |
+            android/app/build/outputs/bundle/release/*.aab
+            app/build/outputs/bundle/release/*.aab
