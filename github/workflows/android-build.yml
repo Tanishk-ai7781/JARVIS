@@ -4,38 +4,45 @@ name: JARVIS Android AAB Build
 on:
   workflow_dispatch:
 
-permissions:
-  contents: read
-
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Java
+      - name: Set up Java JDK
         uses: actions/setup-java@v4
         with:
-          distribution: temurin
+          distribution: 'temurin'
           java-version: '17'
 
-      - name: Check project files
+      - name: Generate Gradle Wrapper
         run: |
-          echo "Checking repository..."
-          if [ ! -f gradlew ]; then
-            echo "Android Gradle project is missing: gradlew not found."
-            echo "This workflow cannot build an AAB until Android project files are added."
-            exit 1
-          fi
+          gradle wrapper --gradle-version 8.7 --distribution-type bin
           chmod +x gradlew
 
-      - name: Build release AAB
-        run: ./gradlew bundleRelease
+      - name: Generate Keystore for Release
+        run: |
+          keytool -genkeypair -v -keystore release.keystore \
+            -alias jarvis-key -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass jarvispassword -keypass jarvispassword \
+            -dname "CN=Mr Tanishk, OU=JARVIS AI, O=JARVIS, L=Patna, S=Bihar, C=IN"
 
-      - name: Upload AAB
+      - name: Build Android App Bundle (.aab)
+        env:
+          ANDROID_HOME: /usr/local/lib/android/sdk
+        run: |
+          ./gradlew :app:bundleRelease --stacktrace \
+            -Pandroid.injected.signing.store.file=$GITHUB_WORKSPACE/release.keystore \
+            -Pandroid.injected.signing.store.password=jarvispassword \
+            -Pandroid.injected.signing.key.alias=jarvis-key \
+            -Pandroid.injected.signing.key.password=jarvispassword
+
+      - name: Upload AAB Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: JARVIS-release-AAB
-          path: '**/build/outputs/bundle/release/*.aab'
+          name: JARVIS-Release-AAB
+          path: app/build/outputs/bundle/release/*.aab
           if-no-files-found: error
