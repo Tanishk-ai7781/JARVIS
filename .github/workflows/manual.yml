@@ -26,8 +26,20 @@ jobs:
         with:
           gradle-version: '8.9'
 
+      - name: Generate Keystore for Release
+        run: |
+          keytool -genkeypair -v -keystore release.keystore \
+            -alias jarvis-key -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass jarvispassword -keypass jarvispassword \
+            -dname "CN=Mr Tanishk, OU=JARVIS AI, O=JARVIS, L=Patna, S=Bihar, C=IN"
+
       - name: Build Android App Bundle
-        run: gradle bundleRelease
+        run: |
+          gradle :app:bundleRelease \
+            -Pandroid.injected.signing.store.file=../release.keystore \
+            -Pandroid.injected.signing.store.password=jarvispassword \
+            -Pandroid.injected.signing.key.alias=jarvis-key \
+            -Pandroid.injected.signing.key.password=jarvispassword
 
       - name: Upload AAB
         uses: actions/upload-artifact@v4
