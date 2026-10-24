@@ -4,9 +4,6 @@ name: JARVIS Android AAB Build
 on:
   workflow_dispatch:
 
-permissions:
-  contents: read
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -15,16 +12,20 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Java
+      - name: Set up Java JDK
         uses: actions/setup-java@v4
         with:
-          distribution: temurin
+          distribution: 'temurin'
           java-version: '17'
 
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.9'
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      # Yeh step missing gradle wrapper ko khud generate kar dega
+      - name: Generate Gradle Wrapper
+        run: |
+          gradle wrapper --gradle-version 8.7 --distribution-type bin
+          chmod +x gradlew
 
       - name: Generate Keystore for Release
         run: |
@@ -33,17 +34,17 @@ jobs:
             -storepass jarvispassword -keypass jarvispassword \
             -dname "CN=Mr Tanishk, OU=JARVIS AI, O=JARVIS, L=Patna, S=Bihar, C=IN"
 
-      - name: Build Android App Bundle
+      - name: Build Android App Bundle (.aab)
         run: |
-          gradle :app:bundleRelease \
+          ./gradlew :app:bundleRelease --stacktrace \
             -Pandroid.injected.signing.store.file=$GITHUB_WORKSPACE/release.keystore \
             -Pandroid.injected.signing.store.password=jarvispassword \
             -Pandroid.injected.signing.key.alias=jarvis-key \
             -Pandroid.injected.signing.key.password=jarvispassword
 
-      - name: Upload AAB
+      - name: Upload AAB Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: JARVIS-release-AAB
+          name: JARVIS-Release-AAB
           path: app/build/outputs/bundle/release/*.aab
           if-no-files-found: error
