@@ -1,4 +1,3 @@
-
 name: JARVIS Android AAB Build
 
 on:
@@ -18,10 +17,6 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
-      # Yeh step missing gradle wrapper ko khud generate kar dega
       - name: Generate Gradle Wrapper
         run: |
           gradle wrapper --gradle-version 8.7 --distribution-type bin
@@ -35,6 +30,8 @@ jobs:
             -dname "CN=Mr Tanishk, OU=JARVIS AI, O=JARVIS, L=Patna, S=Bihar, C=IN"
 
       - name: Build Android App Bundle (.aab)
+        env:
+          ANDROID_HOME: /usr/local/lib/android/sdk
         run: |
           ./gradlew :app:bundleRelease --stacktrace \
             -Pandroid.injected.signing.store.file=$GITHUB_WORKSPACE/release.keystore \
