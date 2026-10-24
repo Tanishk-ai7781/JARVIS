@@ -36,7 +36,7 @@ jobs:
       - name: Build Android App Bundle
         run: |
           gradle :app:bundleRelease \
-            -Pandroid.injected.signing.store.file=../release.keystore \
+            -Pandroid.injected.signing.store.file=$GITHUB_WORKSPACE/release.keystore \
             -Pandroid.injected.signing.store.password=jarvispassword \
             -Pandroid.injected.signing.key.alias=jarvis-key \
             -Pandroid.injected.signing.key.password=jarvispassword
