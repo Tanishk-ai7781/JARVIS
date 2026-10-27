@@ -12,8 +12,9 @@ android {
         applicationId "com.tanishk.jarvis"
         minSdk 26
         targetSdk 36
-        versionCode 1
-        versionName "1.0"
+        // Play needs a bigger versionCode on every upload; GitHub's run number only ever grows.
+        versionCode (System.getenv("GITHUB_RUN_NUMBER") ?: "1").toInteger()
+        versionName "1.0." + (System.getenv("GITHUB_RUN_NUMBER") ?: "1")
     }
 
     signingConfigs {
