@@ -1,0 +1,796 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#020814">
+<meta name="description" content="JARVIS — a personal AI assistant founded by Mr. Tanishk.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>JARVIS</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='28' fill='%23020814' stroke='%2300e5ff' stroke-width='4'/%3E%3Ccircle cx='32' cy='32' r='10' fill='%2300e5ff'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Rajdhani:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#020814; --bg2:#06142b; --panel:rgba(8,26,52,.72); --line:rgba(0,229,255,.22);
+  --cyan:#00e5ff; --cyan2:#4df0ff; --text:#dff7ff; --muted:#7fa6b8; --user:#0a3a63; --danger:#ff5d73; --ok:#3dffa8;
+  --display:'Orbitron','Segoe UI',system-ui,sans-serif; --body:'Rajdhani','Segoe UI',system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{background:radial-gradient(1200px 700px at 50% -10%,#0a2a52 0%,var(--bg) 60%) fixed;color:var(--text);font-family:var(--body);font-size:17px;display:flex;justify-content:center}
+.app{width:100%;max-width:760px;height:100dvh;display:flex;flex-direction:column;padding:env(safe-area-inset-top) 14px env(safe-area-inset-bottom)}
+header{display:flex;align-items:center;justify-content:space-between;padding:14px 4px 8px}
+.brand{font-family:var(--display);font-weight:700;letter-spacing:.32em;font-size:20px;color:var(--cyan);text-shadow:0 0 14px rgba(0,229,255,.55)}
+.brand small{display:block;font-family:var(--body);font-weight:500;letter-spacing:.14em;font-size:11px;color:var(--muted);text-shadow:none;margin-top:2px}
+.chips{display:flex;gap:8px;align-items:center}
+.chip{display:flex;align-items:center;gap:6px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;padding:5px 10px;border:1px solid var(--line);border-radius:999px;background:rgba(0,229,255,.05);color:var(--muted)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--danger);box-shadow:0 0 8px currentColor;color:var(--danger)}
+.chip.on .dot{background:var(--ok);color:var(--ok)}
+.permrow{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin-bottom:10px;background:rgba(0,229,255,.04)}
+.permrow .pt{font-family:var(--display);font-size:12px;letter-spacing:.12em;text-transform:uppercase}
+.permstat{font-size:14px;color:var(--muted);margin-top:2px}
+.permstat.ok{color:var(--ok)} .permstat.bad{color:var(--danger)}
+.permhelp{display:none;font-size:14px;line-height:1.4;color:#ffd166;border:1px solid rgba(255,209,102,.4);border-radius:12px;padding:10px;margin-bottom:10px}
+.permnote{font-size:13px;color:var(--muted);margin-bottom:10px}
+.permnote a{color:var(--cyan)}
+.chip.gold{color:#ffd166;border-color:rgba(255,209,102,.55)}
+.chip.gold .dot{background:#ffd166;color:#ffd166}
+.iconbtn{background:none;border:1px solid var(--line);color:var(--cyan);border-radius:10px;width:36px;height:36px;font-size:16px;cursor:pointer}
+.iconbtn:active{background:rgba(0,229,255,.12)}
+
+/* Orb */
+.stage{display:flex;flex-direction:column;align-items:center;padding:6px 0 4px;flex:none}
+.orb{position:relative;width:150px;height:150px;transition:transform .4s}
+.orb .core{position:absolute;inset:48px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#bff8ff,var(--cyan) 45%,#0077a8 100%);box-shadow:0 0 36px 8px rgba(0,229,255,.55),inset 0 0 18px rgba(255,255,255,.4);animation:breathe 3.6s ease-in-out infinite}
+.orb .ring{position:absolute;border-radius:50%;border:2px solid transparent}
+.orb .r1{inset:0;border-top-color:var(--cyan);border-bottom-color:rgba(0,229,255,.25);animation:spin 7s linear infinite}
+.orb .r2{inset:14px;border-left-color:var(--cyan2);border-right-color:rgba(77,240,255,.2);animation:spin 5s linear infinite reverse}
+.orb .r3{inset:28px;border:1px dashed rgba(0,229,255,.45);animation:spin 16s linear infinite}
+.orb.listening .core{animation:pulse .9s ease-in-out infinite;filter:hue-rotate(-25deg)}
+.orb.speaking .core{animation:talk .5s ease-in-out infinite}
+.orb.listening .r1,.orb.speaking .r1{animation-duration:2.2s}
+.state{font-family:var(--display);font-size:11px;letter-spacing:.3em;color:var(--muted);margin-top:8px;text-transform:uppercase;min-height:14px}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes breathe{50%{transform:scale(1.06);box-shadow:0 0 48px 12px rgba(0,229,255,.65),inset 0 0 18px rgba(255,255,255,.4)}}
+@keyframes pulse{50%{transform:scale(1.22)}}
+@keyframes talk{0%,100%{transform:scale(1)}30%{transform:scale(1.16)}60%{transform:scale(.96)}}
+
+/* Chat */
+.chat{flex:1;min-height:0;overflow-y:auto;padding:10px 2px 8px;display:flex;flex-direction:column;gap:12px;scroll-behavior:smooth}
+.chat::-webkit-scrollbar{width:4px}.chat::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px}
+.msg{max-width:86%;padding:10px 14px;border-radius:16px;line-height:1.4;white-space:pre-wrap;word-wrap:break-word;animation:in .25s ease-out}
+.msg.ai{align-self:flex-start;background:var(--panel);border:1px solid var(--line);border-top-left-radius:4px}
+.msg.user{align-self:flex-end;background:linear-gradient(135deg,#0b4a7d,var(--user));border:1px solid rgba(0,229,255,.3);border-top-right-radius:4px}
+.msg.err{border-color:rgba(255,93,115,.5);background:rgba(255,93,115,.08)}
+.tag{display:block;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--cyan);margin-bottom:4px;opacity:.85}
+.retry{margin-top:8px;background:none;border:1px solid var(--danger);color:var(--danger);border-radius:8px;padding:4px 12px;font:inherit;font-size:14px;cursor:pointer}
+.typing{display:inline-flex;gap:5px;padding:4px 0}
+.typing i{width:7px;height:7px;border-radius:50%;background:var(--cyan);animation:bounce 1s infinite}
+.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
+@keyframes bounce{0%,80%,100%{opacity:.25;transform:translateY(0)}40%{opacity:1;transform:translateY(-4px)}}
+@keyframes in{from{opacity:0;transform:translateY(6px)}}
+
+/* Quick actions */
+.quick{display:flex;gap:8px;overflow-x:auto;padding:4px 0 8px;flex:none;scrollbar-width:none}
+.quick::-webkit-scrollbar{display:none}
+.quick button{flex:none;background:rgba(0,229,255,.06);border:1px solid var(--line);color:var(--text);border-radius:999px;padding:7px 14px;font:inherit;font-size:15px;cursor:pointer}
+.quick button:active{background:rgba(0,229,255,.18)}
+.quick button.on{background:var(--cyan);color:#001018;border-color:var(--cyan);font-weight:600}
+
+/* Composer */
+form{display:flex;gap:8px;align-items:center;padding:8px;border:1px solid var(--line);border-radius:18px;background:var(--panel);backdrop-filter:blur(8px);flex:none}
+input[type=text]{flex:1;min-width:0;background:none;border:0;outline:0;color:var(--text);font:inherit;font-size:17px;padding:8px 6px}
+input::placeholder{color:var(--muted)}
+.btn{flex:none;width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:rgba(0,229,255,.08);color:var(--cyan);font-size:18px;cursor:pointer;display:grid;place-items:center}
+.btn.mic.active{background:var(--danger);border-color:var(--danger);color:#fff;box-shadow:0 0 16px rgba(255,93,115,.7)}
+.btn.send{background:var(--cyan);color:#001018;border-color:var(--cyan);font-weight:700}
+.btn:disabled{opacity:.45}
+footer{text-align:center;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);padding:8px 0 10px;flex:none}
+footer b{color:var(--cyan);font-weight:600}
+@media (max-height:640px){.orb{width:100px;height:100px}.orb .core{inset:32px}.orb .r2{inset:9px}.orb .r3{inset:19px}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+.brand{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.usage{text-align:center;font-size:14px;color:var(--muted);padding:0 0 6px;flex:none;min-height:20px}
+.usage b{color:var(--cyan);font-weight:600}
+.usage button{background:none;border:0;color:var(--cyan);font:inherit;text-decoration:underline;cursor:pointer;padding:0 2px}
+.usage.low b{color:#ffd166}
+.plans{max-height:88dvh;overflow-y:auto}
+.plancard{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px;background:rgba(0,229,255,.04)}
+.plancard .pn{font-family:var(--display);font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--text)}
+.plancard .pp{font-size:20px;color:var(--cyan);font-weight:600}
+.plancard .pd{font-size:13px;color:var(--muted)}
+.plancard button{flex:none}
+.plancard .pm{font-size:12px;color:var(--ok);margin-top:1px}
+.durbar{display:flex;gap:8px;overflow-x:auto;padding:2px 0 10px;scrollbar-width:none}
+.durbar::-webkit-scrollbar{display:none}
+.durbar button{flex:none;background:rgba(0,229,255,.06);border:1px solid var(--line);color:var(--text);border-radius:999px;padding:6px 12px;font:inherit;font-size:14px;cursor:pointer}
+.durbar button.on{background:var(--cyan);color:#001018;border-color:var(--cyan);font-weight:600}
+.note{font-size:14px;color:#ffd166;margin:4px 0 10px;display:none}
+footer a{color:var(--cyan);text-decoration:underline;letter-spacing:.1em}
+footer .credit{display:block;margin-top:6px;text-transform:none;letter-spacing:.02em;font-size:11px;line-height:1.35;opacity:.85}
+.modal{position:fixed;inset:0;background:rgba(2,8,20,.8);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;padding:20px;z-index:50}
+.sheet{width:100%;max-width:360px;background:#071a35;border:1px solid var(--line);border-radius:18px;padding:18px;box-shadow:0 0 40px rgba(0,229,255,.18)}
+.sheet h3{font-family:var(--display);font-size:14px;letter-spacing:.18em;color:var(--cyan);text-transform:uppercase;margin-bottom:8px}
+.sheet p{color:var(--muted);margin-bottom:12px;line-height:1.35}
+.sheet input{width:100%;background:rgba(0,229,255,.06);border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:12px;color:var(--text);font:inherit;outline:0}
+.sheet .row{display:flex;gap:10px;justify-content:flex-end}
+.sheet button{font:inherit;font-size:16px;border-radius:10px;padding:8px 16px;border:1px solid var(--line);background:none;color:var(--text);cursor:pointer}
+.sheet button.ok{background:var(--cyan);border-color:var(--cyan);color:#001018;font-weight:600}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand" id="brand">JARVIS<small id="tagline">PERSONAL AI ASSISTANT</small></div>
+    <div class="chips">
+      <div class="chip" id="net"><span class="dot"></span><span id="netText">Offline</span></div>
+      <button class="iconbtn" id="permBtn" title="Permissions" aria-label="Permissions">⚙</button>
+      <button class="iconbtn" id="speakToggle" title="Voice replies on/off" aria-label="Toggle voice replies">🔊</button>
+      <button class="iconbtn" id="clearBtn" title="Clear chat" aria-label="Clear chat">🗑</button>
+    </div>
+  </header>
+
+  <div class="stage">
+    <div class="orb" id="orb"><div class="ring r1"></div><div class="ring r2"></div><div class="ring r3"></div><div class="core"></div></div>
+    <div class="state" id="state">Standing by</div>
+  </div>
+
+  <div class="usage" id="usage"></div>
+
+  <main class="chat" id="chat" aria-live="polite"></main>
+
+  <div class="quick" id="quick">
+    <button id="handsBtn">🎧 Hands-free</button>
+    <button id="installBtn" style="display:none">⬇ Install app</button>
+    <button data-q="what time is it">🕒 Time</button>
+    <button data-q="what is today's date">📅 Date</button>
+    <button data-q="open youtube">▶ YouTube</button>
+    <button data-q="open google">🔎 Google</button>
+    <button data-q="open gmail">✉ Gmail</button>
+    <button data-q="open maps">📍 Maps</button>
+  </div>
+
+  <form id="form" autocomplete="off">
+    <button type="button" class="btn mic" id="mic" aria-label="Voice input">🎤</button>
+    <input type="text" id="input" placeholder="Ask JARVIS anything…" aria-label="Message">
+    <button type="submit" class="btn send" id="send" aria-label="Send">➤</button>
+  </form>
+
+  <footer>
+    JARVIS is owned and founded by <b>Mr. Tanishk</b> · <a href="privacy.html">Privacy Policy</a> · <a href="#" id="founderLink">Founder login</a>
+    <span class="credit">AI was used to make this app. Thanks to Claude, Gemini, ChatGPT and GitHub for supporting our owner, Tanishk, in making this app.</span>
+  </footer>
+</div>
+
+<div class="modal" id="permModal" role="dialog" aria-modal="true">
+  <div class="sheet plans">
+    <h3>Permissions</h3>
+    <p>JARVIS asks only for what it needs, and only uses the microphone after you tap a mic button.</p>
+    <div class="permrow">
+      <div><div class="pt">Microphone</div><div class="permstat" id="permMicStat">Checking…</div></div>
+      <button type="button" class="ok" id="permMicBtn">Allow</button>
+    </div>
+    <div class="permhelp" id="permHelp"></div>
+    <div class="permrow">
+      <div><div class="pt">Voice replies</div><div class="permstat" id="permVoiceStat">Checking…</div></div>
+      <button type="button" id="permVoiceBtn">Test</button>
+    </div>
+    <div class="permnote">JARVIS never reads your contacts, messages, photos, camera or location. <a href="privacy.html">Privacy Policy</a></div>
+    <div class="row"><button type="button" class="ok" id="permClose">Done</button></div>
+  </div>
+</div>
+
+<div class="modal" id="plansModal" role="dialog" aria-modal="true">
+  <div class="sheet plans">
+    <h3>Choose a plan</h3>
+    <p id="plansIntro">Unlock unlimited questions with a JARVIS plan. Longer plans cost less per month.</p>
+    <div class="durbar" id="durBar"></div>
+    <div id="planList"></div>
+    <div class="note" id="plansNote">Payments aren't switched on yet. Plans will open here once secure payment is connected.</div>
+    <div class="row"><button type="button" id="plansClose">Close</button></div>
+  </div>
+</div>
+
+<div class="modal" id="modal" role="dialog" aria-modal="true">
+  <div class="sheet">
+    <h3 id="mTitle"></h3>
+    <p id="mBody"></p>
+    <input type="password" id="mInput" autocomplete="off" autocapitalize="off" spellcheck="false">
+    <div class="row"><button type="button" id="mCancel">Cancel</button><button type="button" class="ok" id="mOk">OK</button></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  /* ---- Config ----
+     Set API_URL to your deployed backend. It must accept POST JSON {message, history}
+     and return JSON {reply}. Keep AI keys on the server, never in this file. */
+  var API_URL = "https://jarvis-mr-tanishk-premium.vercel.app/api/chat";
+  var TIMEOUT_MS = 25000;
+  var STORE = "jarvis_chat_v1", PREF = "jarvis_speak_v1";
+
+  /* ---- Plans & free limit ---- */
+  var FREE_LIMIT = 91;                 // free AI questions per device
+  var USED_KEY = "jarvis_used_v1";
+  var DURATIONS = [                    // proposed prices by the owner (INR)
+    {id:"1m", label:"1 Month",  months:1},
+    {id:"3m", label:"3 Months", months:3},
+    {id:"6m", label:"6 Months", months:6},
+    {id:"1y", label:"1 Year",   months:12},
+    {id:"2y", label:"2 Years",  months:24},
+    {id:"3y", label:"3 Years",  months:36},
+    {id:"4y", label:"4 Years",  months:48},
+    {id:"5y", label:"5 Years",  months:60}
+  ];
+  var PLANS = [                        // prices follow DURATIONS order
+    {id:"basic",    name:"Basic",    prices:[99,  269,  499,  999,  1799,  2499,  3199,  3999]},
+    {id:"premium",  name:"Premium",  prices:[199, 549,  999,  1999, 3599,  4999,  6399,  7999]},
+    {id:"pro",      name:"Pro",      prices:[399, 1099, 1999, 3999, 7199,  9999,  12799, 15999]},
+    {id:"ultimate", name:"Ultimate", prices:[799, 2199, 3999, 7999, 14399, 19999, 25599, 31999]}
+  ];
+  /* Payment links stay empty until a real payment provider AND server-side verification are
+     connected. Keys look like "basic_1y". Do not paste links here before the server can
+     confirm payments. */
+  var PAY_LINKS = {};
+  var chosenDur = "1y";
+
+  var $ = function(id){return document.getElementById(id)};
+  var chat=$("chat"), orb=$("orb"), stateEl=$("state"), input=$("input"), form=$("form"),
+      micBtn=$("mic"), sendBtn=$("send"), net=$("net"), netText=$("netText"), speakBtn=$("speakToggle");
+  var history=[], speakOn=true, recog=null, listening=false, busy=false;
+  var handsFree=false, silentRounds=0, rt=null, announcing=false;
+
+  try{ speakOn = localStorage.getItem(PREF)!=="0"; }catch(e){}
+  speakBtn.textContent = speakOn ? "🔊" : "🔇";
+
+  function setState(mode,label){
+    orb.className="orb"+(mode?" "+mode:"");
+    stateEl.textContent=label||"Standing by";
+  }
+  function save(){ try{localStorage.setItem(STORE,JSON.stringify(history.slice(-60)))}catch(e){} }
+  function scroll(){ chat.scrollTop=chat.scrollHeight; }
+
+  function addMsg(role,text,opts){
+    opts=opts||{};
+    var d=document.createElement("div");
+    d.className="msg "+role+(opts.err?" err":"");
+    if(role==="ai"){ var t=document.createElement("span"); t.className="tag"; t.textContent="JARVIS · AI assistant"; d.appendChild(t); }
+    var p=document.createElement("span"); p.textContent=text; d.appendChild(p);
+    chat.appendChild(d); scroll();
+    if(!opts.noSave){ history.push({role:role,text:text}); save(); }
+    return d;
+  }
+  function addTyping(){
+    var d=document.createElement("div"); d.className="msg ai";
+    d.innerHTML='<span class="tag">JARVIS · AI assistant</span><span class="typing"><i></i><i></i><i></i></span>';
+    chat.appendChild(d); scroll(); return d;
+  }
+
+  function idleLabel(){ return handsFree ? "Hands-free on" : "Standing by"; }
+  function finishSpeak(cb){ if(cb) cb(); else if(handsFree) resumeHandsFree(900); }
+  /* Speak text aloud. cb (optional) runs when speech ends; otherwise, in hands-free mode,
+     JARVIS goes back to listening. A timer guards against engines that never report "end". */
+  function splitForSpeech(t){
+    t=String(t||"").replace(/\s+/g," ").trim();
+    var raw=t.match(/[^.!?\u0964]+[.!?\u0964]*/g)||[t], out=[], cur="";
+    raw.forEach(function(x){
+      x=x.trim(); if(!x) return;
+      if(cur && (cur+" "+x).length>170){ out.push(cur); cur=x; } else cur=cur?cur+" "+x:x;
+    });
+    if(cur) out.push(cur);
+    var fin=[];
+    out.forEach(function(p){
+      while(p.length>220){ var i=p.lastIndexOf(" ",200); if(i<50) i=200; fin.push(p.slice(0,i)); p=p.slice(i).trim(); }
+      if(p) fin.push(p);
+    });
+    return fin.length?fin:[t];
+  }
+  function speak(text,cb){
+    if(!speakOn || !("speechSynthesis" in window)){ setState("",idleLabel()); finishSpeak(cb); return; }
+    var fired=false, guard=null;
+    function end(){ if(fired) return; fired=true; clearTimeout(guard); setState("",idleLabel()); finishSpeak(cb); }
+    try{
+      speechSynthesis.cancel();
+      var parts=splitForSpeech(text);
+      guard=setTimeout(end,5000+String(text).length*120);
+      setTimeout(function(){
+        if(fired) return;
+        try{
+          parts.forEach(function(part,i){
+            var u=new SpeechSynthesisUtterance(part); u.rate=1; u.pitch=.95; u.lang="en-IN";
+            if(i===0) u.onstart=function(){setState("speaking","Speaking")};
+            if(i===parts.length-1) u.onend=end;
+            u.onerror=end;
+            speechSynthesis.speak(u);
+          });
+        }catch(e){ end(); }
+      },80);
+    }catch(e){ end(); }
+  }
+
+  function reply(text,opts){ addMsg("ai",text,opts); speak(text); }
+
+  /* Inside the Android app, window.open() does nothing; changing location lets the app hand
+     the link to the phone's browser. In a normal browser we open a new tab. */
+  function openExternal(url){
+    if(window.AndroidBridge){ window.location.href=url; }
+    else { window.open(url,"_blank","noopener"); }
+  }
+  function openSite(url,name){ reply("Opening "+name+"."); setTimeout(function(){openExternal(url)},400); }
+
+  /* ---- Free-question counter ---- */
+  function getUsed(){ try{ return parseInt(localStorage.getItem(USED_KEY)||"0",10)||0; }catch(e){ return 0; } }
+  function addUsed(){ try{ localStorage.setItem(USED_KEY,String(getUsed()+1)); }catch(e){} renderUsage(); }
+  function unlimited(){ return window.JARVIS_PLAN==="founder" || window.JARVIS_PLAN==="premium"; }
+  function renderUsage(){
+    var el=$("usage"); if(!el) return;
+    el.className="usage";
+    if(window.JARVIS_PLAN==="founder"){ el.innerHTML="<b>Ultimate mode</b> · Founder · unlimited questions"; return; }
+    if(window.JARVIS_PLAN==="premium"){ el.innerHTML="<b>Premium</b> · unlimited questions"; return; }
+    var left=Math.max(0,FREE_LIMIT-getUsed());
+    if(left<=10) el.className="usage low";
+    el.innerHTML="Free plan · <b>"+left+"</b> of "+FREE_LIMIT+" questions left · <button type=\"button\" id=\"viewPlans\">View plans</button>";
+    var b=$("viewPlans"); if(b) b.onclick=showPlans;
+  }
+  function rupees(n){ return "₹"+Number(n).toLocaleString("en-IN"); }
+  function renderPlans(){
+    var di=0; DURATIONS.forEach(function(d,i){ if(d.id===chosenDur) di=i; });
+    var dur=DURATIONS[di];
+    var bar=$("durBar"); bar.innerHTML="";
+    DURATIONS.forEach(function(d){
+      var b=document.createElement("button"); b.type="button"; b.textContent=d.label;
+      if(d.id===chosenDur) b.className="on";
+      b.onclick=function(){ chosenDur=d.id; $("plansNote").style.display="none"; renderPlans(); };
+      bar.appendChild(b);
+    });
+    var list=$("planList"); list.innerHTML="";
+    PLANS.forEach(function(p){
+      var price=p.prices[di], monthly=p.prices[0];
+      var c=document.createElement("div"); c.className="plancard";
+      var l=document.createElement("div");
+      var n=document.createElement("div"); n.className="pn"; n.textContent=p.name;
+      var pr=document.createElement("div"); pr.className="pp"; pr.textContent=rupees(price);
+      var d=document.createElement("div"); d.className="pd"; d.textContent=dur.label+" · unlimited questions";
+      l.appendChild(n); l.appendChild(pr); l.appendChild(d);
+      if(dur.months>1){
+        var save=Math.round((1-price/(monthly*dur.months))*100);
+        var pm=document.createElement("div"); pm.className="pm";
+        pm.textContent="≈ "+rupees(Math.round(price/dur.months))+" per month"+(save>0?" · save "+save+"%":"");
+        l.appendChild(pm);
+      }
+      var b=document.createElement("button"); b.type="button"; b.className="ok"; b.textContent="Choose";
+      b.onclick=function(){
+        var link=PAY_LINKS[p.id+"_"+dur.id];
+        if(link) openExternal(link);
+        else $("plansNote").style.display="block";
+      };
+      c.appendChild(l); c.appendChild(b); list.appendChild(c);
+    });
+  }
+  function showPlans(){
+    if(handsFree) stopHandsFree(null,true);
+    $("plansNote").style.display="none";
+    renderPlans();
+    $("plansModal").style.display="flex";
+  }
+  $("plansClose").onclick=function(){ $("plansModal").style.display="none"; };
+
+  /* Local commands (work offline) */
+  function localCommand(q){
+    var s=q.toLowerCase();
+    if(/\b(hello|hi|hey)\b.*jarvis|^(hello|hi|hey)\b/.test(s)){ reply("Hello. JARVIS is online and ready."); return true; }
+    if(/time/.test(s)&&/(what|tell|current)/.test(s)){ reply("It is "+new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})+"."); return true; }
+    if(/\b(date|day)\b/.test(s)&&/(what|today|tell)/.test(s)){ reply("Today is "+new Date().toLocaleDateString([], {weekday:"long",year:"numeric",month:"long",day:"numeric"})+"."); return true; }
+    if(/open youtube/.test(s)){ openSite("https://www.youtube.com","YouTube"); return true; }
+    if(/open google/.test(s)){ openSite("https://www.google.com","Google"); return true; }
+    if(/open (gmail|mail)/.test(s)){ openSite("https://mail.google.com","Gmail"); return true; }
+    if(/open maps/.test(s)){ openSite("https://maps.google.com","Maps"); return true; }
+    if(/who (made|created|founded|owns)|your (founder|owner)/.test(s)){ reply("JARVIS is owned and founded by Mr. Tanishk."); return true; }
+    return false;
+  }
+
+  /* Online AI via backend */
+  function askBackend(q){
+    if(!API_URL){
+      reply("The online AI service isn't connected yet, so I can only run basic commands right now: time, date, and opening YouTube, Google, Gmail or Maps.",{err:true});
+      return Promise.resolve();
+    }
+    if(!unlimited() && getUsed()>=FREE_LIMIT){
+      reply("You've used all "+FREE_LIMIT+" free questions. Choose a plan to keep asking JARVIS.",{err:true});
+      showPlans();
+      return Promise.resolve();
+    }
+    if(!navigator.onLine){
+      reply("You're offline. I can still run basic commands, but AI answers need an internet connection.",{err:true});
+      return Promise.resolve();
+    }
+    var typing=addTyping(); setState("", "Thinking"); busy=true; sendBtn.disabled=true;
+    var ctl=new AbortController(); var timer=setTimeout(function(){ctl.abort()},TIMEOUT_MS);
+    return fetch(API_URL,{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({message:q,history:history.slice(-12)}),signal:ctl.signal})
+    .then(function(r){ if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); })
+    .then(function(j){ typing.remove(); if(!j||!j.reply) throw new Error("Empty reply"); reply(String(j.reply)); addUsed(); })
+    .catch(function(e){
+      typing.remove();
+      var why = e.name==="AbortError" ? "The server took too long to respond." :
+                /^HTTP 5/.test(e.message) ? "The server had an internal error ("+e.message+")." :
+                /^HTTP 4/.test(e.message) ? "The server rejected the request ("+e.message+")." :
+                "I couldn't reach the server. Check your connection.";
+      var d=addMsg("ai",why,{err:true,noSave:true});
+      var b=document.createElement("button"); b.className="retry"; b.textContent="Retry"; b.type="button";
+      b.onclick=function(){ d.remove(); askBackend(q); };
+      d.appendChild(b); setState("",idleLabel());
+      if(handsFree) speak(why);
+    })
+    .then(function(){ clearTimeout(timer); busy=false; sendBtn.disabled=false; });
+  }
+
+  function handle(q){
+    q=(q||"").trim(); if(!q||busy) return;
+    addMsg("user",q);
+    if(!localCommand(q)) askBackend(q);
+  }
+
+  /* Voice input */
+  var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  var hfBtn=$("handsBtn");
+  function keepAwake(on){ try{ if(window.AndroidBridge && AndroidBridge.keepScreenOn) AndroidBridge.keepScreenOn(!!on); }catch(e){} }
+
+  function stopListen(){
+    var was=listening; listening=false; micBtn.classList.remove("active");
+    if(recog){try{recog.stop()}catch(e){}}
+    if(was && window.AndroidBridge){try{AndroidBridge.stopListening()}catch(e){}}
+    setState("",idleLabel());
+  }
+
+  /* ---- Microphone permission (browser) ----
+     Chrome only shows its permission prompt while the tap is still "fresh", so we ask for the
+     microphone right inside the button tap, before JARVIS speaks. The Android app does it natively. */
+  var micOk=false;
+  function micHelp(){
+    addMsg("ai","The microphone is blocked for this site. Fix: tap the lock icon (or the ⋮ menu → Settings) next to the web address → Permissions → Microphone → Allow, then reload the page. Also check Android Settings → Apps → Chrome → Permissions → Microphone. If you opened JARVIS inside another app (WhatsApp, Instagram…), open it in Chrome instead. Tap the ⚙ button at the top for help.",{err:true,noSave:true});
+  }
+  function ensureMic(cb){
+    if(window.AndroidBridge || micOk || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){ cb(true); return; }
+    var ask=function(){
+      navigator.mediaDevices.getUserMedia({audio:true}).then(function(st){
+        st.getTracks().forEach(function(t){t.stop()});
+        micOk=true; setTimeout(function(){cb(true)},300);
+      }).catch(function(e){
+        if(e && (e.name==="NotFoundError"||e.name==="DevicesNotFoundError")){
+          addMsg("ai","No microphone was found on this device.",{err:true,noSave:true});
+        } else if(e && (e.name==="NotReadableError"||e.name==="TrackStartError")){
+          addMsg("ai","The microphone is being used by another app (a call, Google Assistant or a recorder). Close it and try again.",{err:true,noSave:true});
+        } else micHelp();
+        cb(false);
+      });
+    };
+    if(navigator.permissions && navigator.permissions.query){
+      navigator.permissions.query({name:"microphone"}).then(function(r){
+        if(r.state==="denied"){ micHelp(); cb(false); }
+        else if(r.state==="granted"){ micOk=true; cb(true); }
+        else ask();
+      }).catch(ask);
+    } else ask();
+  }
+
+  /* ---- Hands-free mode: listen -> answer aloud -> listen again, until you say "stop" ---- */
+  function resumeHandsFree(delay){
+    clearTimeout(rt);
+    var waited=0;
+    rt=setTimeout(function tick(){
+      if(!handsFree) return;
+      var talking=false; try{ talking=!!(window.speechSynthesis && speechSynthesis.speaking); }catch(e){}
+      var plansOpen=$("plansModal").style.display==="flex";
+      if((busy||listening||announcing||talking||plansOpen) && waited++<20){ rt=setTimeout(tick,400); return; }
+      beginListen();
+    },delay||300);
+  }
+  function noteSilence(){
+    if(!handsFree) return;
+    if(++silentRounds>=3){ stopHandsFree("Hands-free paused because I didn't hear anything. Tap Hands-free to continue."); }
+    else resumeHandsFree(800);
+  }
+  function startHandsFree(){
+    if(handsFree) return;
+    if(!window.AndroidBridge && !SR){
+      addMsg("ai","Hands-free needs voice input, which this browser doesn't support. Try Chrome or the JARVIS Android app.",{err:true,noSave:true});
+      return;
+    }
+    ensureMic(function(ok){ if(ok) reallyStartHandsFree(); });
+  }
+  function reallyStartHandsFree(){
+    if(handsFree) return;
+    handsFree=true; silentRounds=0; hfBtn.classList.add("on");
+    speakOn=true; speakBtn.textContent="🔊"; try{localStorage.setItem(PREF,"1")}catch(e){}
+    keepAwake(true); setState("",idleLabel());
+    var m="JARVIS is serving you boss. Hands-free mode is on. Say stop to turn it off.";
+    addMsg("ai",m,{noSave:true});
+    speak(m,function(){ resumeHandsFree(700); });
+  }
+  function stopHandsFree(msg,keepSpeech){
+    if(!handsFree) return;
+    handsFree=false; clearTimeout(rt); announcing=false; silentRounds=0;
+    hfBtn.classList.remove("on"); keepAwake(false);
+    if(listening) stopListen();
+    if(!keepSpeech){ try{speechSynthesis.cancel()}catch(e){} }
+    setState("",idleLabel());
+    if(msg) addMsg("ai",msg,{noSave:true});
+  }
+  hfBtn.addEventListener("click",function(){
+    if(handsFree) stopHandsFree("Hands-free is off.");
+    else startHandsFree();
+  });
+  /* Leaving the app or switching tabs always turns the microphone off. */
+  document.addEventListener("visibilitychange",function(){
+    if(!document.hidden) return;
+    if(handsFree) stopHandsFree("Hands-free paused because the app went to the background.");
+    else if(listening) stopListen();
+  });
+  window.__onAppPause=function(){
+    if(handsFree) stopHandsFree("Hands-free paused because the app went to the background.");
+    else if(listening) stopListen();
+  };
+
+  /* A spoken result: "stop" ends hands-free; anything else is handled as a question. */
+  function voiceResult(t){
+    silentRounds=0;
+    if(handsFree && /^(stop|stop listening|goodbye|bye|exit|quit|that'?s all|turn off hands.?free)\b/i.test((t||"").trim())){
+      addMsg("user",t);
+      stopHandsFree();
+      var m="Understood, boss. Hands-free is off.";
+      addMsg("ai",m,{noSave:true}); speak(m,function(){});
+      return;
+    }
+    handle(t);
+  }
+
+  /* Inside the Android app, the built-in browser can't do speech recognition,
+     so the app provides it natively through AndroidBridge. */
+  window.__onNativeSpeech=function(t){ stopListen(); voiceResult(t); };
+  window.__onNativeError=function(code){
+    stopListen();
+    if(handsFree && (code===6||code===7||code===8)){ noteSilence(); return; }
+    if(handsFree) stopHandsFree();
+    var m = code==="denied" ? "Microphone permission is blocked. Allow it in Android Settings → Apps → JARVIS → Permissions." :
+            code==="unavailable" ? "Speech recognition isn't available on this phone." :
+            (code===6||code===7) ? "I didn't catch that. Tap the mic and try again." :
+            (code===2||code===4||code===5) ? "Speech recognition needs an internet connection." :
+            "Microphone error ("+code+").";
+    addMsg("ai",m,{err:true,noSave:true});
+  };
+
+  /* Start the microphone right now (no announcement). */
+  function beginListen(){
+    if(listening) return;
+    if(window.AndroidBridge){
+      try{ speechSynthesis.cancel(); }catch(e){}
+      listening=true; micBtn.classList.add("active"); setState("listening","Listening");
+      AndroidBridge.startListening(); return;
+    }
+    if(!SR){ stopHandsFree(); addMsg("ai","Voice input isn't supported in this browser. You can type instead.",{err:true,noSave:true}); return; }
+    try{ speechSynthesis.cancel(); }catch(e){}
+    recog=new SR(); recog.lang="en-IN"; recog.continuous=false; recog.interimResults=false; recog.maxAlternatives=1;
+    recog.onstart=function(){listening=true;micBtn.classList.add("active");setState("listening","Listening")};
+    recog.onresult=function(ev){ var t=ev.results[0][0].transcript; stopListen(); voiceResult(t); };
+    recog.onerror=function(ev){
+      var code=ev.error; stopListen();
+      if(code==="aborted") return;
+      if(handsFree && code==="no-speech"){ noteSilence(); return; }
+      if(handsFree) stopHandsFree();
+      if(code==="not-allowed"||code==="service-not-allowed"){ micOk=false; micHelp(); return; }
+      var m = code==="audio-capture" ? "I can't reach the microphone. Another app may be using it (a call or Google Assistant). Close it and try again." :
+              code==="no-speech" ? "I didn't hear anything. Tap the mic and try again." :
+              code==="network" ? "Speech recognition needs an internet connection." :
+              "Microphone error: "+code;
+      addMsg("ai",m,{err:true,noSave:true});
+    };
+    recog.onend=function(){ if(listening){ stopListen(); if(handsFree) noteSilence(); } };
+    try{ recog.start(); }catch(e){ stopListen(); }
+  }
+
+  /* Mic button: JARVIS says "serving you boss" instead of the system beep, then listens. */
+  function startListen(){
+    if(listening||announcing) return;
+    ensureMic(function(ok){ if(ok) announceThenListen(); });
+  }
+  function announceThenListen(){
+    if(listening||announcing) return;
+    if(!(speakOn && ("speechSynthesis" in window))){ beginListen(); return; }
+    announcing=true; micBtn.classList.add("active");
+    speak("JARVIS is serving you boss.",function(){
+      if(!announcing) return;
+      announcing=false; micBtn.classList.remove("active"); beginListen();
+    });
+  }
+  micBtn.addEventListener("click",function(){
+    if(handsFree){ stopHandsFree("Hands-free is off."); return; }
+    if(announcing){
+      announcing=false; micBtn.classList.remove("active");
+      try{speechSynthesis.cancel()}catch(e){} setState("",idleLabel()); return;
+    }
+    listening ? stopListen() : startListen();
+  });
+
+  /* ---- Permissions panel ---- */
+  var permModal=$("permModal"), permErr="", PERM_SEEN="jarvis_perm_seen_v1";
+  function setPerm(id,text,cls){ var el=$(id); el.textContent=text; el.className="permstat "+(cls||""); }
+  function micState(cb){
+    if(window.AndroidBridge){
+      if(typeof AndroidBridge.hasMic==="function"){ try{ cb(AndroidBridge.hasMic()?"granted":"prompt"); }catch(e){ cb("android"); } }
+      else cb("android");
+      return;
+    }
+    if(navigator.permissions && navigator.permissions.query){
+      navigator.permissions.query({name:"microphone"}).then(function(r){ cb(r.state); }).catch(function(){ cb("unknown"); });
+    } else cb("unknown");
+  }
+  function renderPerm(){
+    micState(function(st){
+      var help=$("permHelp"), btn=$("permMicBtn");
+      help.style.display="none"; btn.style.display=""; btn.textContent="Allow";
+      if(st==="granted"){ micOk=true; setPerm("permMicStat","Allowed ✓","ok"); btn.style.display="none"; }
+      else if(st==="android"){ setPerm("permMicStat","Android will ask when you tap the mic",""); btn.style.display="none"; }
+      else if(st==="denied" || permErr==="NotAllowedError"){
+        micOk=false; setPerm("permMicStat","Blocked ✗","bad"); btn.textContent="Try again";
+        help.textContent = window.AndroidBridge ?
+          "Open Android Settings → Apps → JARVIS → Permissions → Microphone → Allow, then come back here." :
+          "Tap the lock icon (or ⋮ → Settings) next to the web address → Permissions → Microphone → Allow, then reload. Also check Android Settings → Apps → Chrome → Permissions → Microphone. If you opened JARVIS inside another app (WhatsApp, Instagram…), open it in Chrome instead.";
+        help.style.display="block";
+      }
+      else if(permErr==="NotFoundError"){ setPerm("permMicStat","No microphone found","bad"); }
+      else if(permErr==="NotReadableError"){ setPerm("permMicStat","In use by another app","bad"); }
+      else setPerm("permMicStat","Not allowed yet","");
+    });
+    var ok=("speechSynthesis" in window);
+    setPerm("permVoiceStat", ok ? "Available ✓" : "Not supported in this browser", ok?"ok":"bad");
+    $("permVoiceBtn").style.display = ok ? "" : "none";
+  }
+  function openPerm(){ permErr=""; renderPerm(); permModal.style.display="flex"; }
+  function closePerm(){ permModal.style.display="none"; try{localStorage.setItem(PERM_SEEN,"1")}catch(e){} }
+  window.__onMicPermission=function(ok){ if(ok) micOk=true; renderPerm(); };
+  $("permBtn").addEventListener("click",openPerm);
+  $("permClose").addEventListener("click",closePerm);
+  $("permMicBtn").addEventListener("click",function(){
+    permErr="";
+    if(window.AndroidBridge){
+      if(typeof AndroidBridge.requestMic==="function"){ AndroidBridge.requestMic(); } else renderPerm();
+      return;
+    }
+    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){ renderPerm(); return; }
+    navigator.mediaDevices.getUserMedia({audio:true}).then(function(st){
+      st.getTracks().forEach(function(t){t.stop()}); micOk=true; renderPerm();
+    }).catch(function(e){ permErr=(e&&e.name)||"NotAllowedError"; renderPerm(); });
+  });
+  $("permVoiceBtn").addEventListener("click",function(){
+    speakOn=true; speakBtn.textContent="🔊"; try{localStorage.setItem(PREF,"1")}catch(e){}
+    speak("JARVIS is serving you boss. Voice is working.",function(){});
+  });
+
+  /* ---- Install / download ---- */
+  var deferredInstall=null, installBtn=$("installBtn");
+  if(window.AndroidBridge){ var dl=$("dlRow"); if(dl) dl.style.display="none"; }  // already in the app
+  window.addEventListener("beforeinstallprompt",function(e){
+    e.preventDefault(); deferredInstall=e; installBtn.style.display="";
+  });
+  installBtn.addEventListener("click",function(){
+    if(!deferredInstall) return;
+    deferredInstall.prompt();
+    deferredInstall.userChoice.then(function(){ deferredInstall=null; installBtn.style.display="none"; });
+  });
+  window.addEventListener("appinstalled",function(){ installBtn.style.display="none"; });
+  if("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
+    navigator.serviceWorker.register("sw.js").catch(function(){});
+  }
+
+  /* Wiring */
+  form.addEventListener("submit",function(e){ e.preventDefault(); var v=input.value; input.value=""; handle(v); });
+  $("quick").addEventListener("click",function(e){ var q=e.target.getAttribute&&e.target.getAttribute("data-q"); if(q) handle(q); });
+  speakBtn.addEventListener("click",function(){
+    speakOn=!speakOn; speakBtn.textContent=speakOn?"🔊":"🔇";
+    try{localStorage.setItem(PREF,speakOn?"1":"0")}catch(e){}
+    if(!speakOn){try{speechSynthesis.cancel()}catch(e){} setState("","Standing by");}
+  });
+  /* In-page dialog (the Android WebView ignores confirm()/prompt()) */
+  function ask(title,body,withInput,okLabel){
+    return new Promise(function(res){
+      var m=$("modal"),i=$("mInput"),ok=$("mOk"),no=$("mCancel");
+      $("mTitle").textContent=title; $("mBody").textContent=body||"";
+      i.style.display=withInput?"block":"none"; i.value=""; ok.textContent=okLabel||"OK";
+      m.style.display="flex"; if(withInput) setTimeout(function(){i.focus()},50);
+      function done(v){ m.style.display="none"; ok.onclick=no.onclick=null; res(v); }
+      ok.onclick=function(){ done(withInput?i.value:true); };
+      no.onclick=function(){ done(withInput?null:false); };
+    });
+  }
+  $("clearBtn").addEventListener("click",function(){
+    ask("Clear chat","This deletes the saved conversation on this device.",false,"Clear").then(function(ok){
+      if(!ok) return;
+      history=[]; save(); chat.innerHTML=""; greet();
+    });
+  });
+
+  /* ---- Founder access (Mr. Tanishk): lifetime premium on this device ----
+     Hold the JARVIS title for ~1.5 seconds to open the unlock dialog.
+     Only a hash of the passphrase is stored here. This is a client-side flag; when real
+     paid plans are added, enforce premium on the server and treat the founder account there. */
+  var FOUNDER_HASH="90623b96c23c74763caa6bf4255ba716bcb8de7fab5d572ad1421b9ad90eadd3";
+  var FKEY="jarvis_founder_v1";
+  function ror(n,x){return (x>>>n)|(x<<(32-n));}
+  function sha256(str){
+    var bytes=unescape(encodeURIComponent(str)).split("").map(function(c){return c.charCodeAt(0)});
+    var primes=[],n=2;
+    while(primes.length<64){var ok=true;for(var i=0;i<primes.length;i++){if(n%primes[i]===0){ok=false;break}}if(ok)primes.push(n);n++}
+    var K=primes.map(function(p){return Math.floor((Math.cbrt(p)%1)*4294967296)});
+    var H=primes.slice(0,8).map(function(p){return Math.floor((Math.sqrt(p)%1)*4294967296)});
+    var l=bytes.length; bytes.push(0x80); while(bytes.length%64!==56) bytes.push(0);
+    var hi=Math.floor(l*8/4294967296), lo=(l*8)>>>0;
+    bytes.push((hi>>>24)&255,(hi>>>16)&255,(hi>>>8)&255,hi&255,(lo>>>24)&255,(lo>>>16)&255,(lo>>>8)&255,lo&255);
+    for(var off=0;off<bytes.length;off+=64){
+      var w=[],t;
+      for(t=0;t<16;t++) w[t]=(bytes[off+4*t]<<24)|(bytes[off+4*t+1]<<16)|(bytes[off+4*t+2]<<8)|bytes[off+4*t+3];
+      for(t=16;t<64;t++){var s0=ror(7,w[t-15])^ror(18,w[t-15])^(w[t-15]>>>3);var s1=ror(17,w[t-2])^ror(19,w[t-2])^(w[t-2]>>>10);w[t]=(w[t-16]+s0+w[t-7]+s1)|0;}
+      var a=H[0],b=H[1],c=H[2],d=H[3],e=H[4],f=H[5],g=H[6],h=H[7];
+      for(t=0;t<64;t++){
+        var S1=ror(6,e)^ror(11,e)^ror(25,e),ch=(e&f)^(~e&g),t1=(h+S1+ch+K[t]+w[t])|0;
+        var S0=ror(2,a)^ror(13,a)^ror(22,a),mj=(a&b)^(a&c)^(b&c),t2=(S0+mj)|0;
+        h=g;g=f;f=e;e=(d+t1)|0;d=c;c=b;b=a;a=(t1+t2)|0;
+      }
+      H[0]=(H[0]+a)|0;H[1]=(H[1]+b)|0;H[2]=(H[2]+c)|0;H[3]=(H[3]+d)|0;H[4]=(H[4]+e)|0;H[5]=(H[5]+f)|0;H[6]=(H[6]+g)|0;H[7]=(H[7]+h)|0;
+    }
+    return H.map(function(x){return ("00000000"+(x>>>0).toString(16)).slice(-8)}).join("");
+  }
+  function applyPlan(){
+    var f=false; try{ f=localStorage.getItem(FKEY)===FOUNDER_HASH; }catch(e){}
+    window.JARVIS_PLAN=f?"founder":"free";
+    var tg=$("tagline"); tg.textContent=f?"FOUNDER · ULTIMATE · LIFETIME":"PERSONAL AI ASSISTANT"; tg.style.color=f?"#ffd166":"";
+    renderUsage(); updateNet();
+  }
+  function founderFlow(){
+    if(window.JARVIS_PLAN==="founder"){
+      ask("Founder access","Remove founder access from this device?",false,"Remove").then(function(ok){
+        if(!ok) return;
+        try{localStorage.removeItem(FKEY)}catch(e){} applyPlan();
+        addMsg("ai","Founder access removed from this device.",{noSave:true});
+      });
+      return;
+    }
+    ask("Founder access","Enter the founder passphrase.",true,"Unlock").then(function(v){
+      if(v===null) return;
+      if(sha256(v.trim())===FOUNDER_HASH){
+        try{localStorage.setItem(FKEY,FOUNDER_HASH)}catch(e){} applyPlan();
+        speakOn=true; speakBtn.textContent="🔊"; try{localStorage.setItem(PREF,"1")}catch(e){}
+        var wm="Welcome back, Mr. Tanishk. Ultimate mode is on, with lifetime founder access and voice replies enabled.";
+        addMsg("ai",wm,{noSave:true}); speak(wm);
+      } else {
+        addMsg("ai","That passphrase isn't correct.",{err:true,noSave:true});
+      }
+    });
+  }
+  var lp, brandEl=$("brand");
+  brandEl.addEventListener("pointerdown",function(){ clearTimeout(lp); lp=setTimeout(founderFlow,1500); });
+  ["pointerup","pointerleave","pointercancel"].forEach(function(ev){ brandEl.addEventListener(ev,function(){ clearTimeout(lp); }); });
+  brandEl.addEventListener("contextmenu",function(e){ e.preventDefault(); });
+  var fl=$("founderLink"); if(fl) fl.addEventListener("click",function(e){ e.preventDefault(); founderFlow(); });
+  applyPlan();
+  function updateNet(){
+    var on=navigator.onLine, fd=window.JARVIS_PLAN==="founder"; net.classList.toggle("on",on);
+    net.classList.toggle("gold",on&&fd);
+    netText.textContent = !on ? "Offline" : (fd ? "Ultimate" : (API_URL ? "Online" : "Basic mode"));
+  }
+  window.addEventListener("online",updateNet); window.addEventListener("offline",updateNet); updateNet();
+
+  function greet(){
+    addMsg("ai","Good to see you. I'm JARVIS. Type a message, tap the microphone, or turn on Hands-free.",{noSave:true});
+  }
+  try{ history=JSON.parse(localStorage.getItem(STORE)||"[]"); }catch(e){ history=[]; }
+  if(history.length){ history.forEach(function(m){ addMsg(m.role,m.text,{noSave:true}); }); }
+  else greet();
+  try{ if(!localStorage.getItem(PERM_SEEN)) setTimeout(openPerm,700); }catch(e){}
+})();
+</script>
+</body>
+</html>
