@@ -2,6 +2,7 @@ plugins {
     id 'com.android.application'
 }
 
+def runNumber = (System.getenv("GITHUB_RUN_NUMBER") ?: "1").toInteger()
 def hasKeystore = System.getenv("KEYSTORE_FILE") != null && !System.getenv("KEYSTORE_FILE").isEmpty()
 
 android {
@@ -13,8 +14,8 @@ android {
         minSdk 26
         targetSdk 36
         // Play needs a bigger versionCode on every upload; GitHub's run number only ever grows.
-        versionCode (System.getenv("GITHUB_RUN_NUMBER") ?: "1").toInteger()
-        versionName "1.0." + (System.getenv("GITHUB_RUN_NUMBER") ?: "1")
+        versionCode = runNumber
+        versionName = "1.0." + runNumber
     }
 
     signingConfigs {
